@@ -1,12 +1,12 @@
 // ball bounce yay
 
 // fundamental units
-double uTime = 1; // s
-double uLength = 1; // m
-double uMass = 1; // kg
+double uTime = 100; // s
+double uLength = 100; // m
+double uMass = 100; // kg
 
 double uVelocity = uLength / uTime; // m * s^-1
-double uForce = uMass * uVelocity / uTime / uTime; // kg * m * s^-2
+double uForce = uMass * uVelocity / uTime; // kg * m * s^-2
 
 class Vector {
 	double x, y;
@@ -64,28 +64,26 @@ class Shape {
 		return force.add(groundNormal).add(gravity);
 	}
 	
-	public void update() {
+	public void update(double t) {
 		Vector f = totalForce(); // kg * m * s^-2
-
-		if (position.y > ground.y) {
-			velocity.y *= -0.5;
-			f.y = 0;
-		}
 		
-		if (Math.abs(velocity.x) < 0.01 * uVelocity)
-			velocity.x = 0;
-		if (Math.abs(velocity.y) < 0.01 * uVelocity)
-			velocity.y = 0;
+		groundNormal.y = 0;
+		
+		if (position.y > ground.y) {
+			velocity.y /= 2;
+			groundNormal.y = -velocity.y / 5e4 * (uMass / uTime) * mass * (position.y - ground.y) / uLength; // basically what the line above used to do
+			position.y = ground.y;
+		}
 		
 		position = position.add(velocity);
 		// F = m * a
 		
-		Vector a = f.divide(mass); // m * s^-2
+		Vector v = f.divide(mass).multiply(t); // m * s^-1
 		
 		// v = u + a * t
-		velocity = velocity.add(a.multiply(uTime)); // m * s^-1
-		
-		velocity = velocity.multiply(1 - drag);
+		velocity = velocity
+		.add(v)
+			.multiply(1 - drag);
 	}
 	
 	public void draw() {
@@ -157,17 +155,17 @@ void setup() {
 		height * uLength - r);
 }
 
-double gForce = 0.6 * uForce; // Force per unit mass
+double gForcePerMass = 0.6 * uForce / uMass; // Force per unit mass (m * s^-2)
 
 void draw() {
 	background(0);
 	noStroke();
 	
 	for (Circle shape : shapes) {
-		double gForceMass = gForce * shape.mass; // kg * m * s^-2
-		shape.gravity = new Vector(0, gForceMass);
+		double gForce = gForcePerMass * shape.mass; // kg * m * s^-2
+		shape.gravity = new Vector(0, gForce);
 		
-		shape.update();
+		shape.update(100 * uTime);
 		shape.draw();
 	}
 }
