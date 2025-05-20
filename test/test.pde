@@ -1,12 +1,13 @@
 // ball bounce yay
 
 // fundamental units
-double uTime = 100; // s
-double uLength = 100; // m
-double uMass = 100; // kg
+double
+uTime = 1, // s (watch out, changes simulation speed, larger = slower)
+uLength = 100, // m
+uMass = 100, // kg
 
-double uVelocity = uLength / uTime; // m * s^-1
-double uForce = uMass * uVelocity / uTime; // kg * m * s^-2
+uVelocity = uLength / uTime, // m * s^-1
+uForce = uMass * uVelocity / uTime; // kg * m * s^-2
 
 class Vector {
 	double x, y;
@@ -46,9 +47,9 @@ class Shape {
 	double mass;
 	
 	// forces
-	Vector force = new Vector(0, 0);
-	Vector groundNormal = new Vector(0, 0);
-	Vector gravity = new Vector(0, 0);
+	Vector force = new Vector(0, 0),
+		groundNormal = new Vector(0, 0),
+		gravity = new Vector(0, 0);
 	
 	// ground
 	Vector ground;
@@ -64,33 +65,34 @@ class Shape {
 		return force.add(groundNormal).add(gravity);
 	}
 	
-	public void update(double t) {
+	public void update() {
+		// order is important (I think)
+		
+		position = position.add(velocity.divide(uTime)); // m
+
 		Vector f = totalForce(); // kg * m * s^-2
 		
-		groundNormal.y = 0;
-		
-		if (position.y > ground.y) {
+		if (position.y > ground.y && velocity.y > 0) {
 			velocity.y /= 2;
-			groundNormal.y = -velocity.y / 5e4 * (uMass / uTime) * mass * (position.y - ground.y) / uLength; // basically what the line above used to do
+			groundNormal.y = -velocity.y * mass / uTime; // basically what the line above used to do
 			position.y = ground.y;
-		}
+		} else
+			groundNormal.y = 0;
 		
-		position = position.add(velocity);
 		// F = m * a
-		
-		Vector v = f.divide(mass).multiply(t); // m * s^-1
+		Vector s = f.divide(mass).multiply(uTime); // m
 		
 		// v = u + a * t
 		velocity = velocity
-		.add(v)
-			.multiply(1 - drag);
+		.add(s)
+			.multiply(1 - drag / uTime);
 	}
 	
 	public void draw() {
 		// debug
-		int px = (int)(position.x / uLength);
-		int py = (int)(position.y / uLength);
-		int lw = 10;
+		int px = (int)(position.x / uLength),
+			py = (int)(position.y / uLength),
+			lw = 10;
 		
 		fill(255, 0, 0);
 		stroke(255, 0, 0);
@@ -118,9 +120,9 @@ class Circle extends Shape {
 	
 	public void draw() {
 		fill(colour);
-		int r = (int)(radius / uLength);
-		int px = (int)(position.x / uLength);
-		int py = (int)(position.y / uLength);
+		int r = (int)(radius / uLength),
+			px = (int)(position.x / uLength),
+			py = (int)(position.y / uLength);
 		ellipse(px, py, r * 2, r * 2);
 		
 		super.draw();
@@ -165,7 +167,7 @@ void draw() {
 		double gForce = gForcePerMass * shape.mass; // kg * m * s^-2
 		shape.gravity = new Vector(0, gForce);
 		
-		shape.update(100 * uTime);
+		shape.update();
 		shape.draw();
 	}
 }
